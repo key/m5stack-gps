@@ -3,12 +3,13 @@ import utime, gc, _thread
 from math import radians, sin, cos
 
 import uos
-from machine import UART, Timer, RTC
+from machine import RTC, UART
 from m5stack import lcd, buttonC
 
 import micropyGPS
 
 lcd.clear()
+
 
 # Init GPS
 lcd.print('UART:Initializing\n', 0, 0)
@@ -18,10 +19,10 @@ gps = micropyGPS.MicropyGPS(9, 'dd')
 lcd.print('UART:Initialized\n')
 
 # Init RTC
-lcd.print("RTC:Initializing\n")
+lcd.print('RTC:Initializing\n')
 rtc = RTC()
-rtc.ntp_sync(server="hr.pool.ntp.org", tz="CET-1CEST")
-lcd.print("RTC:Initialize status %s\n" % rtc.synced())
+rtc.ntp_sync(server='hr.pool.ntp.org', tz='CET-1CEST')
+lcd.print('RTC:Initialize status %s\n' % rtc.synced())
 
 # Mount SD
 result = uos.mountsd()
@@ -29,7 +30,7 @@ lcd.print('SDCard:Mount result %s\n' % result)
 lcd.print('SDCard:listdir %s\n' % uos.listdir('/sd'))
 
 
-def GPSwatch():
+def watchGPS():
     lcd.print('GPS:Start loop\n')
 
     n = 0
@@ -37,7 +38,7 @@ def GPSwatch():
     satellites = dict()
     satellites_used = dict()
 
-    fp = open('/sd/gpslog.txt', 'w+')
+    fp = open('/sd/gpslog.txt', 'a')
     lcd.print('fp %s\n' % fp)
 
     while True:
@@ -48,25 +49,29 @@ def GPSwatch():
             fp.write(buf)
 
             if buttonC.isPressed():
-                lcd.print('Button C Pressed. Exit\n')
+                lcd.clear()
+                lcd.print('Button C Pressed.\n', 0, 0)
                 fp.close()
+                lcd.print('File closed.\n')
+                lcd.print('System exit.\n')
                 sys.exit()
 
             for val in buf:
+
                 if 10 <= val <= 126:
                     stat = gps.update(chr(val))
                     if stat:
                         tm = gps.timestamp
                         tm_now = (tm[0] * 3600) + (tm[1] * 60) + int(tm[2])
                         print('compare time tm_now={}, tm_last={}'.format(tm_now, tm_last))
-                        lcd.print('GPS:Waiting for GPS timestamp\n')
                         if (tm_now - tm_last) >= 10:
                             print('compare True')
                             n += 1
                             tm_last = tm_now
-                            print("{} {}:{}:{}".format(gps.date_string(), tm[0], tm[1], int(tm[2])))
+                            print('{} {}:{}:{}'.format(gps.date_string(), tm[0], tm[1], int(tm[2])))
                             str_ = '%.10f %c, %.10f %c' % (
-                            gps.latitude[0], gps.latitude[1], gps.longitude[0], gps.longitude[1])
+                            gps.latitude[0], gps.latitude[1], gps.longitude[0], gps.longitude[1],
+                            )
                             print(str_)
                             lcd.clear()
                             lcd.print(str_, 10, 0)
@@ -76,7 +81,7 @@ def GPSwatch():
                             drawGrid()
                             drawSatellites(satellites, satellites_used)
                             if (n % 10) == 0:
-                                print("Mem free:", gc.mem_free())
+                                print('Mem free:', gc.mem_free())
                                 gc.collect()
 
 def putSatellites(sats, new_sats, tm):
@@ -119,4 +124,4 @@ def drawSatellites(sats, sats_used):
             lcd.print(str(k), int(x) + 9, int(y) - 7)
 
 
-testth = _thread.start_new_thread("GPS", GPSwatch, ())
+testth = _thread.start_new_thread('GPS', watchGPS, ())
