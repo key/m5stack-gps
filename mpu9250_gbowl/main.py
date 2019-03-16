@@ -5,7 +5,7 @@ from machine import I2C
 from mpu9250 import MPU9250
 import time
 
-i2c = I2C(sda = 21, scl = 22)
+i2c = I2C(sda=21, scl=22)
 sensor = MPU9250(i2c)
 
 lcd.clear()
