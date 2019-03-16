@@ -1,3 +1,4 @@
+# based on https://gist.github.com/TakehikoShimojima/e47e6e8ee9d1a57a20d2bca588b59b03#file-gpswatch-py
 import sys
 import utime, gc, _thread
 from math import radians, sin, cos
